@@ -156,6 +156,16 @@
   }
 
   function drawCircle(x, y) {
+    var dx;
+    var dy;
+    // If the new ball collides with an existing ball, don't place it.
+    for (var i = 0; i < balls.length; i++) {
+      dx = balls[i].x - x;
+      dy = balls[i].y - y;
+      if (Math.sqrt(dx * dx + dy * dy) <= balls[i].radius) {
+        return;
+      }
+    }
     return balls.push(new Ball(x, y, random(colors)));
   }
 
