@@ -31,17 +31,6 @@
     drawCircle(x, y);
   }, false);
 
-  function canvasSupport() {
-    var elem = document.createElement('canvas');
-    var hasCanvas = !!(elem.getContext && elem.getContext('2d'));
-    delete elem;
-    return hasCanvas;
-  }
-
-  if (!canvasSupport()) {
-    return;
-  }
-
   var canvas = document.querySelector('canvas.game');
   var ctx = canvas.getContext('2d');
 
@@ -76,8 +65,9 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // render
-    for (var i = 0; i < balls.length; i++) {
+    for (var i = 0; i < balls.length - 1; i++) {
       var ball = balls[i];
+      ball.chimed = false;
 
       // draw the circle
       ctx.beginPath();
@@ -96,45 +86,37 @@
       var anotherBall;
       var makeBallSmaller = false;
 
-      for (var j = 0; j < balls.length; j += 1) {
+      // Only test against balls that come after the current ball. If we've
+      // gotten to this point, we've already done calculations for all previous ball
+      // collisions.
+      for (var j = i + 1; j < balls.length; j++) {
         anotherBall = balls[j];
-        if (ball.id === anotherBall.id) {
+        // You should never be able to collide with a ball that's shrinking.
+        if (anotherBall.rateOfChange < 0) {
           continue;
         }
         if (hitTestCircle(ball, anotherBall)) {
-          console.log('collision', ball.id);
-          if (ball.collided.indexOf(anotherBall) === -1) {
-            ball.collided.push(anotherBall);
-          }
-
-          // when this ball collides with another, shrink it.
+          console.log('collision', ball.id, anotherBall.id);
+          // when this ball collides with another, shrink both.
           ball.rateOfChange = -.3;
+          anotherBall.rateOfChange = -.3;
 
           if (!ball.chimed) {
             playChime(ball);
-            balls[j].chimed = ball.chimed = true;
+            anotherBall.chimed = ball.chimed = true;
           }
 
           break;
-        } else {
-          ball.chimed = false;
         }
       }
 
       if (ball.nextRadius <= minRadius) {
         console.log('too small', ball.id);
-        ball.collided.forEach(function(v, k) {
-          console.log('shrinking', k)
-          balls[k].rateOfChange -= .3;
-        });
-
         ball.rateOfChange = .3;
       }
 
       ball.radius += ball.rateOfChange;
       ball.nextRadius = ball.radius + ball.rateOfChange;
-
-      balls[i] = ball;
     }
 
     requestAnimationFrame(function() {
@@ -150,7 +132,6 @@
     this.radius = minRadius;
     this.rateOfChange = .3;
     this.nextRadius = this.radius + this.rateOfChange;
-    this.collided = [];
     this.chimed = false;
     this.chime = newChime(this.id);
   }
